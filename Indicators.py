@@ -15,13 +15,21 @@ class Indicator:
         ## 列：每一个bar的字段信息（例如：ohlc，volume etc.）
         self.OriginalDatas = initData
 
+<<<<<<< HEAD
     def SMA(self, periods=12, **kwargs):
+=======
+    def SMA(self, periods=12):
+>>>>>>> d3e3f8dcb28130b8145daa700fb3b8aa47729ffa
         # 简单移动平均
         close = self.OriginalDatas.close
         ma = close.rolling_mean(window=periods, min_periods=2)
         return ma
 
+<<<<<<< HEAD
     def EMA(self, periods=12, **kwargs):
+=======
+    def EMA(self, periods=12):
+>>>>>>> d3e3f8dcb28130b8145daa700fb3b8aa47729ffa
         # 加权移动平均
         # periods大致等于希望用于计算的数据量，12就是12个bar
         # https://pandas.pydata.org/pandas-docs/version/0.17.0/generated/pandas.ewma.html
