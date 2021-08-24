@@ -2,6 +2,7 @@ import numpy as np
 from numpy.lib.index_tricks import AxisConcatenator
 import pandas as pd
 import math
+from pandas.io import parsers
 
 import sklearn as sk
 import sklearn.linear_model as sklm
@@ -113,3 +114,14 @@ class Indicator:
 
         return adtm, adtmma
 
+    def RSI(self):
+        pass
+
+    def ATR(self):
+        pass
+
+    def KDJ(self):
+        pass
+
+    def SAR(self):
+        pass
