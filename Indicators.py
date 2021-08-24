@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.lib.index_tricks import AxisConcatenator
 import pandas as pd
 import math
 
@@ -83,8 +84,32 @@ class Indicator:
         bollMidd = ma
         return bollMidd,bollDown,bollUp
 
-    def ADTM(self):
+    def ADTM(self, periods=23, window=8, **kwargs):
         # 计算动态买卖气指标
         # 利用开盘价基准的上涨与下跌幅度判断标的关注度
-        pass
+        # periods是求adtm时使用的周期
+        # window是计算adtm的sma时的周期
+        # adtm在-1到1之间，高风险区间为0.5-1， 低风险区间为（-1）-（-0.5）
+        # 关于adtm与它的sma之间的上下穿越关系和普通的一样。
+        open = self.OriginalDatas.open
+        preopen = open.shift(1)
+
+        close = self.OriginalDatas.close
+        preclose = close.shift(1)
+
+        dtm = open
+        dtm[open<=preopen] = 0
+        dtm[open>preopen] = pd.DataFrame([self.OriginalDatas.high[open>preopen]-open[open>preopen], open[open>preopen]-preopen[open>preopen]]).max(axis=1)
+
+        dbm = open
+        dbm[open>=preopen] = 0
+        dbm[open<preopen] = open[open<preopen] - self.OriginalDatas.low[open<preopen]
+
+        stm = dtm.rolling(periods).sum()
+        sbm = dbm.rolling(periods).sum()
+
+        adtm = (stm-sbm)/pd.DataFrame([stm, sbm]).max(axis=1)
+        adtmma = self.SMA(window, {'data':adtm})
+
+        return adtm, adtmma
 
