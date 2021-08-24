@@ -2,8 +2,11 @@ import numpy as np
 import pandas as pd
 import math
 
-import sklearn as skl
+import sklearn as sk
+import sklearn.linear_model as sklm
 import scipy
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -18,15 +21,15 @@ class Indicator:
     def SMA(self, periods=12, **kwargs):
         # 简单移动平均
         close = self.OriginalDatas.close
-        ma = close.rolling_mean(window=periods, min_periods=2)
+        ma = close.rolling(window=periods, min_periods=2).mean()
         return ma
 
     def EMA(self, periods=12, **kwargs):
         # 加权移动平均
         # periods大致等于希望用于计算的数据量，12就是12个bar
         # https://pandas.pydata.org/pandas-docs/version/0.17.0/generated/pandas.ewma.html
-        if 'data' in kws.keys():
-            ema = kws['data'].close.ewma(com=periods, min_periods=2)
+        if 'data' in kwargs.keys():
+            ema = kwargs['data'].close.ewma(com=periods, min_periods=2)
         else:
             ema = self.OriginalDatas.close.ewma(com=periods, min_periods=2)
         return ema
@@ -39,7 +42,7 @@ class Indicator:
         # https://zhuanlan.zhihu.com/p/82604762
         alpha = 0.015
         tp = self.OriginalDatas.loc[:,['high', 'low', 'close']].mean(axis=1)
-        matp = tp.rolling_mean(window=periods, min_periods=periods)
+        matp = tp.rolling(window=periods, min_periods=periods).mean()
         mdev = tp.rolling(window=periods, min_periods=periods).apply(lambda x: 
             (x-x.mean()).abs().mean())
         
@@ -55,3 +58,29 @@ class Indicator:
         dea = self.EMA(periods, temp)
         macd = 2*(dif - dea)
         return dif, dea, macd
+
+    def ACCER(self, periods=8, **kwargs):
+        # 计算幅度涨速指标
+        # 首先求出periods区间内close价格的斜率
+        # 然后对当前价格做归一
+        # 0一般为基准线，以上为上涨区间，以下为下跌区间
+        
+        close = self.OriginalDatas.close[-8:]
+        linreg = sklm.LinearRegression()
+        linreg.fit(range(periods), close)
+        linreg.score(range(periods), close)
+        accer = linreg.coef_/close[-1]
+        return accer
+
+    def BOLLINGER(self, periods=12, var=2, **kwargs):
+        # 计算布林带，或称为保利加通道
+        # 计算periods区间内的移动平均和标准差
+        # 返回boll中轨，下轨，上轨bollMidd,bollDown,bollUp
+        ma = self.SMA(periods)
+        std = self.OriginalDatas.close.rolling(periods).std()
+        bollUp = ma+var*std
+        bollDown = ma-var*std
+        bollMidd = ma
+        return bollMidd,bollDown,bollUp
+
+    
