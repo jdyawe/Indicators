@@ -83,6 +83,10 @@ class Indicator:
         bollMidd = ma
         return bollMidd,bollDown,bollUp
 
+<<<<<<< HEAD
     def ADTM(self):
         # 计算动态买卖气指标
         # 利用开盘价基准的上涨与下跌幅度判断标的关注度
+=======
+    
+>>>>>>> b7846a396cca7605fb5e3355aed6022734d28214
