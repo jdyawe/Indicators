@@ -1,8 +1,6 @@
 import numpy as np
-from numpy.lib.index_tricks import AxisConcatenator
 import pandas as pd
 import math
-from pandas.io import parsers
 
 import sklearn as sk
 import sklearn.linear_model as sklm
@@ -18,6 +16,8 @@ class Indicator:
         ## 加载历史数据，构造Indicator对象，计算基于传入历史数据的各种指标
         ## 行：时间戳
         ## 列：每一个bar的字段信息（例如：ohlc，volume etc.）
+        ## 时间戳由上到下为历史到今天！！这个很重要，在下面所有信号的计算中几乎都用到了这个默认规定
+
         self.OriginalDatas = initData
 
     def SMA(self, periods=12, **kwargs):
@@ -30,10 +30,11 @@ class Indicator:
         # 加权移动平均
         # periods大致等于希望用于计算的数据量，12就是12个bar
         # https://pandas.pydata.org/pandas-docs/version/0.17.0/generated/pandas.ewma.html
-        if 'data' in kwargs.keys():
-            ema = kwargs['data'].close.ewma(com=periods, min_periods=2)
-        else:
-            ema = self.OriginalDatas.close.ewma(com=periods, min_periods=2)
+        
+        ema = self.OriginalDatas.close.ewma(com=periods, min_periods=2)
+        # 衰减系数：
+        # alpha = 1/(1+com)
+        # alpha = 2/(1+span)
         return ema
 
 
@@ -114,14 +115,70 @@ class Indicator:
 
         return adtm, adtmma
 
-    def RSI(self):
-        pass
+    def RSI(self, periods=12, **kwargs):
+        # 计算相对强弱指标
+        # 在rsi>50范围内为强势区间， <50为弱势区间
+        # 跌破20为超卖区间，涨破80为超买区间
+        close = self.OriginalDatas.close
+        change = close.diff(1)
+        up = change.rolling(periods).apply(lambda x: (x>0).sum())
+        down = change.rolling(periods).apply(lambda x: (x<0).sum())
+        rsi = up/(up+down)*100
 
-    def ATR(self):
-        pass
+        return rsi        
 
-    def KDJ(self):
-        pass
+    def ATR(self, periods=12, **kwargs):
+        # 计算平均波动幅度指标，也称为均幅指标
+        # 计算简单的波动率描述
+        tr = pd.DataFrame()
+        tr['hl'] = self.OriginalDatas.high-self.OriginalDatas.low
+        tr['hc'] = (self.OriginalDatas.high-self.OriginalDatas.close.shift(1)).abs()
+        tr['lc'] = (self.OriginalDatas.low-self.OriginalDatas.close.shift(1)).abs()
+        tr['tr'] = tr.max(axis=1)
+        atr = tr['tr'].rolling(window=periods).mean()
+        return atr
 
-    def SAR(self):
-        pass
+    def KDJ(self, periods=2, window=9, **kwargs):
+        # 计算随即指数
+        # KD波动位于0-100之间，>80为超买，<20为超卖
+        # J>100为超买，<0为超卖
+        # 返回值为(k,d,j)
+
+        close = self.OriginalDatas.close
+        ndaylow = self.OriginalDatas.low.rolling(window).min()
+        ndayhigh = self.OriginalDatas.high.rolling(window).max()
+        rsv = (close-ndaylow)/(ndayhigh-ndaylow)*100
+
+        k = rsv.ewma(com=periods)
+        d = k.ewma(com=periods)
+        j = 3*k-2*d
+        # 此处的平滑移动平均也可以用移动平均代替
+        # 具体效果不明
+        return k,d,j
+
+
+    def SAR(self, periods=4):
+        # 计算抛物线指标
+        # 首先选取前periods天判断上升与下降趋势
+        # 这个周期最后一天的收盘价在这个周期的高低点价位处于60%之上为上升，否则为下降
+        # 下面以初始周期为上升为例，下降相反
+        # 当天的SAR设置为前periods日内最低价，极值点为周期内最高价
+        # SARt = SARt-1 + AF*(EPt-1 - SARt-1)
+        # AF初始值为0.02，若某日更新了极值点价格，则AF增加0.02，最大0.2
+        # 若SARt比当日最低点高，则出现反转，当日SARt应该设置为前periods最高价，进入下跌阶段计算
+
+        data = self.OriginalDatas.loc[:,['close', 'high', 'low']]
+        sar = pd.Series([np.nan]*len(data))
+        AF = 0.02
+
+        # initialization
+        if data.close[periods-1] > data.high[:periods].max()*0.6 + data.low[:periods].min()*0.4:
+            sar[periods-1] = data.low[:periods].min()
+            Flag = 'up'
+        else:
+            sar[periods-1] = data.high[:periods].max()
+            Flag = 'down'
+        
+        # step forward
+        for date in range(periods, data.shape[1]):
+            
