@@ -181,4 +181,92 @@ class Indicator:
         
         # step forward
         for date in range(periods, data.shape[1]):
-            
+            if Flag == 'up':
+                EP = self.OriginalDatas.high[date-periods:date].max()
+                # 计算上升sar
+                if self.OriginalDatas.high[date] > EP:
+                    AF = min([AF+0.02, 0.2])
+                
+                sar[date] = sar[date-1] + AF*(EP - sar[date-1])
+
+                if self.OriginalDatas.low[date]<=sar[date]:
+                    sar[date] = self.OriginalDatas.high[date-periods+1:date+1].max()
+                    Flag = 'down'
+                    AF = 0.02
+
+            else:
+                EP = self.OriginalDatas.low[date-periods:date].min()
+                # 计算下降sar
+                if self.OriginalDatas.low[date] < EP:
+                    AF = min([AF+0.02, 0.2])
+                
+                sar[date] = sar[date-1] + AF*(EP - sar[date-1])
+
+                if self.OriginalDatas.high[date]>=sar[date]:
+                    sar[date] = self.OriginalDatas.low[date-periods+1:date+1].min()
+                    Flag = 'up'
+                    AF = 0.02
+
+        return sar
+
+    def W_R():
+        pass
+
+    def ROC():
+        pass
+
+    def OSC():
+        pass
+    
+    def BIAS():
+        pass
+
+    def UDL():
+        pass
+                    
+    def VR():
+        pass
+
+    def CR():
+        pass
+
+    def ARBR():
+        pass
+
+    def VSTD():
+        pass
+
+    def OBV():
+        pass
+
+    def PVT():
+        pass
+
+    def CDP():
+        pass
+
+    def MIKE():
+        pass
+
+    def DDI():
+        pass
+
+    def RCCD():
+        pass
+
+    def MI():
+        pass
+
+    def UOS():
+        pass
+
+    def PBX():
+        pass
+
+    def OBOS():
+        pass
+
+    def ADR():
+        pass
+
+    
