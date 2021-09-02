@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.core.fromnumeric import mean
 import pandas as pd
 import math
 
@@ -209,20 +210,68 @@ class Indicator:
 
         return sar
 
-    def W_R():
-        pass
+    def WR(self, periods=14):
+        # 计算威廉指标，震荡指标
+        # 判断当前情况的超买与超卖
+        # 指标在0-100
+        # >80超卖， <20超买， 和RSI指标使用方法相反
+        # 判断的大概是当前收盘价和过去periods周期中最高与最低价的位置
 
-    def ROC():
-        pass
+        close = self.OriginalDatas.close
+        high = self.OriginalDatas.high
+        low = self.OriginalDatas.low
 
-    def OSC():
-        pass
+        high = high.rolling(window=periods).apply(max)
+        low = low.rolling(window=periods).apply(min)
+
+        wr = (high-close)/(high-low)*100
+
+        return wr
+
+    def ROC(self, retard=8):
+        # 计算变动率指标 rate of change
+        # 用于判断当前股价变动动力大小
+
+        roc = self.OriginalDatas.close/self.OriginalDatas.close.shift(retard)
+        return roc
+
+    def OSC(self, periods):
+        # 计算震荡指标
+        # 反应当前价格与一段时间内均价的偏离值
+        # 一段时间内的均价可以直接取收盘价，也可以是ohlc的均值，此处取后者
+
+        # baseprice = self.OriginalDatas.close.rolling(window=periods).apply(mean)
+
+        baseprice = self.OriginalDatas.close + self.OriginalDatas.open + self.OriginalDatas.high + self.OriginalDatas.low
+        baseprice = baseprice/4
+        baseprice = baseprice.rolling(window=periods).apply(mean)
+
+        osc = self.OriginalDatas.close/baseprice
+
+        return osc
     
-    def BIAS():
-        pass
+    def BIAS(self, periods=12):
+        # 计算价格乖离率
+        # 简单均价可以被看作过去一段时间内的成本价均价
 
-    def UDL():
-        pass
+        close = self.OriginalDatas.close.rolling(window=periods).apply(mean)
+        bias = (self.OriginalDatas.close-close)/close*100
+
+        return bias
+
+    def UDL(self, p1=3, p2=5, p3=10, p4=20):
+        # 计算引力线指标
+        # 股票走势价格会回归于价值
+        # 当udl过高时倾向于价格下行，过低时倾向于价格上行
+        
+        close = self.OriginalDatas.close
+        c1 = close.rolling(window=p1).apply(mean)
+        c2 = close.rolling(window=p2).apply(mean)
+        c3 = close.rolling(window=p3).apply(mean)
+        c4 = close.rolling(window=p4).apply(mean)
+
+        udl = (c1+c2+c3+c4)/4
+        return udl
                     
     def VR():
         pass
