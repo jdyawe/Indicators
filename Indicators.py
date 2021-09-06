@@ -1,3 +1,4 @@
+from typing import OrderedDict
 import numpy as np
 from numpy.core.fromnumeric import mean
 import pandas as pd
@@ -242,7 +243,7 @@ class Indicator:
 
         # baseprice = self.OriginalDatas.close.rolling(window=periods).apply(mean)
 
-        baseprice = self.OriginalDatas.close + self.OriginalDatas.open + self.OriginalDatas.high + self.OriginalDatas.low
+        baseprice = 2*self.OriginalDatas.close + self.OriginalDatas.high + self.OriginalDatas.low
         baseprice = baseprice/4
         baseprice = baseprice.rolling(window=periods).apply(mean)
 
@@ -273,49 +274,75 @@ class Indicator:
         udl = (c1+c2+c3+c4)/4
         return udl
                     
-    def VR():
+    def VR(self, periods=12):
+        # 计算成交量变异率 (Volume Ratio)
+        # 用于描述成交量的强弱
+        # [40,70]:低价区域，交易稀少，人气涣散，可能是价格底部区间
+        # [80,150]: 安全区域，买卖盘开始增多，人气积聚
+        # [160,450]: 获利区域，买盘动能强大，看涨情绪高涨
+        # [450,]: 警戒区域，标的超买情况严重，当前表现超过了一般情况，没有大的利好消息很难维持这样的涨势
+
+        close = self.OriginalDatas.loc[:, ['close', 'volume']]
+        close['change'] = close.close.diff(1)
+        
+        vr = close.rolling(periods).apply(lambda x: x.volume[x.change>0].sum()/x.volume[x.change<0].sum())
+        return vr
+
+    def CR(self,periods):
+        # 计算中间意愿指标
+        # 描述多空双方力量对比
+        # 计算某一周期内最高价、最低价与前一日日内中间价价差的和
+        # cr指标不同周期的均线会构成博弈区间，在区间内博弈会加剧，区间外情绪较为一致
+        # 周期越长，参与人员越多，博弈区间越激烈，所形成的压力或支撑作用越强
+
+        baseprice = 2*self.OriginalDatas.close + self.OriginalDatas.high + self.OriginalDatas.low
+        baseprice = baseprice.shift(1)/4 # 代表中间价
+
+        p1 = (self.OriginalDatas.high-baseprice).rolling(periods).apply(lambda x: x[x>0].sum())
+        p2 = (baseprice-self.OriginalDatas.low).rolling(periods).apply(lambda x: x[x>0].sum())
+
+        cr = p1/p2*100
+        return cr
+
+    def ARBR(self,):
+        # CR指标的补充性指标
+        
         pass
 
-    def CR():
+    def VSTD(self,):
         pass
 
-    def ARBR():
+    def OBV(self,):
         pass
 
-    def VSTD():
+    def PVT(self,):
         pass
 
-    def OBV():
+    def CDP(self,):
         pass
 
-    def PVT():
+    def MIKE(self,):
         pass
 
-    def CDP():
+    def DDI(self,):
         pass
 
-    def MIKE():
+    def RCCD(self,):
         pass
 
-    def DDI():
+    def MI(self,):
         pass
 
-    def RCCD():
+    def UOS(self,):
         pass
 
-    def MI():
+    def PBX(self,):
         pass
 
-    def UOS():
+    def OBOS(self,):
         pass
 
-    def PBX():
-        pass
-
-    def OBOS():
-        pass
-
-    def ADR():
+    def ADR(self,):
         pass
 
     
